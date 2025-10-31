@@ -1,0 +1,78 @@
+// el valor nulo
+out null = "";
+
+// el tipo de array es una lista
+out function Array.new(this:key, Ty:lang_type)
+{
+    // longitud
+    out #%{this}% = 0;
+
+    // añade un elemento nuevo a la lista
+    out function %{this}%.push(item:%{Ty}%)
+    {
+        // añade el elemento a la lista
+        out %{this}%[@get[#%{this}%]] = %{item}%;
+        // incrementa la longitud
+        out #%{this}% += 1;
+    }
+
+    // elimina el ultimo
+    out function %{this}%.pop()
+    {
+        // decrementa la longitud
+        out #%{this}% -= 1;
+        // setea a null
+        out %{this}%[@get[#%{this}%]] = null;
+    }
+}
+
+// obtiene un elemento de algun Array
+out function Array.GetFrom(array:Array, index:num, reton:out)
+{
+    Sys.Out Syntax[VarSyntax[%{array}%[@get[%{index}%]]]]
+    // devolverlo
+    out %{reton}% = Syntax[VarSyntax[%{array}%[@get[%{index}%]]]];
+}
+
+// el tipo de cadena
+out function String.new(this:key, Str:str)
+{
+    // el string
+    out %{this}% = %{Str}%;
+
+    // seprar
+    out function %{this}%.split(Splitter:str, ReturnOn:Array)
+    {        
+        // la parte actual del string que se usara
+        part = "";
+        // crear array
+        Array.new(ReturnOn, str);
+        // longitud
+        len = Sys.len(%{this}%);
+        // el indexeador
+        index = 0;
+
+        // indexear
+        for (len)
+        {
+            // ajustar el str del sistema actual
+            Sys.__str__ = %{this}%;
+            // ajustar el caracter a obtener
+            Sys.__char__ = index;
+            // obtenerlo en ch
+            Sys.GetChar ch;
+
+            // si es el caracter
+            if ch == %{Splitter}% then {
+                // poner la parte del array
+                ReturnOn.push(part);
+                // vaciar la parte actual
+                part = "";
+            else
+                // juntarlo
+                part $= ch; 
+            }
+            index += 1;
+        }
+    }
+}

@@ -1,0 +1,6 @@
+// el string
+String.new(MyString, "Apple|Banana");
+// separarlo
+String.split("|", MyStringSplited);
+// obtener el primer item
+Sys.Out MyStringSplited[0]

@@ -1,0 +1,15 @@
+function MiFuncion()
+{
+    function MiSubFuncion()
+    {
+        Sys.Out "Esto es un texto largo que puede ser repetido y optimizado"
+    }
+
+    MiSubFuncion();
+    MiSubFuncion();
+    MiSubFuncion();
+    MiSubFuncion();
+    MiSubFuncion();
+}
+
+MiFuncion();

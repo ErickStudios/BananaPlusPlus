@@ -1,0 +1,12 @@
+Array.new(MyArray, num);
+
+// [43]
+MyArray.push(43);
+// [43, 24]
+MyArray.push(24);
+// [43, 24, 56]
+MyArray.push(56);
+
+Sys.Out MyArray[0]
+Sys.Out MyArray[1]
+Sys.Out MyArray[2]
