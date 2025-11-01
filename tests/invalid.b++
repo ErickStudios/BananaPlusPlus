@@ -1,0 +1,5 @@
+// este archivo inicializa tipos con valores que se supone
+// que son invalidos para estos tipos
+
+// inicializar Boolean con un valor no valido
+Boolean.new(MyBoolean, "foo");

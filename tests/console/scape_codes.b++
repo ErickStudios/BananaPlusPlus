@@ -1,0 +1,24 @@
+//(((/**
+
+>  Sys.Out "@ASCII:32mHello @ASCII:36mWorld@ASCII:0m"
+Hello World
+>  Sys.Out "@ASCII:31mFoo @ASCII:33mWorld@ASCII:0m"
+Foo Bar
+>
+*/)))
+
+// importa la libreria std
+import "stdlib.b++";
+
+// este programa requiere Colors se encuentra en stdlib.b++
+require Colors.new;
+
+// crear los colores ASCII
+Colors.new(ASCII);
+
+out Mensaje = ASCII.green;
+out Mensaje $= "Hello ";
+out Mensaje $= ASCII.cyan;
+out Mensaje $= "World";
+
+Sys.Out Mensaje

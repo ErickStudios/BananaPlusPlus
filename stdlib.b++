@@ -1,6 +1,50 @@
 // el valor nulo
 out null = "";
 
+out False = "false";
+out True = "true";
+
+// valores booleanos
+out function Boolean.new(this:key, Val:boolean)
+{
+    out %{this}% = %{Val}%; 
+
+    // invertir su valor
+    out function %{this}%.not()
+    {
+        // true -> false
+        if Syntax["%{this}%==true"] then { out %{this}% = "false"; }
+        // false/null -> true
+        else { out %{this}% = "true"; }
+    }
+
+    // comparar 2 booleanos sin son verdadero
+    out function %{this}%.and(other:boolean)
+    {
+        TrueTwo = "true";
+
+        // si el actual es falso la rego
+        if Syntax["%{this}%==false"] then { TrueTwo = False; }
+
+        // si el otro es falso, la rego
+        if Syntax["%{other}%==false"] then { TrueTwo = False; }
+
+        // devolver el resultado
+        out %{this}% = TrueTwo;
+    }
+
+    // verificar si es true
+    if Syntax["%{Val}%==true"] then { Sys.Out "es true" }
+    else { 
+        // si es falso
+        if Syntax["%{Val}%==false"] then { Sys.Out "es false" }
+        // si no es ni verdadero ni falso, pues, ni como ayudarlo
+        else {
+            Sys.Warn "El valor es invalido"
+        }
+    }
+}
+
 // el tipo de array es una lista
 out function Array.new(this:key, Ty:lang_type)
 {
@@ -63,12 +107,49 @@ out function String.new(this:key, Str:str)
     {
         // los une
         out %{this}% $= %{OtherStr}%;
-        //
+    }
+
+    // extraer
+    out function %{this}%.substring(Start:num, Lenstr:num, Out:Out[str])
+    {
+        // empezar el index
+        out index = %{Start}%;
+
+        // vaciar la cadena
+        out %{Out}% = "";
+
+        for (%{Lenstr}%)
+        {
+            // ajustar el str del sistema actual
+            Sys.__str__ = %{this}%;
+            // ajustar el caracter a obtener
+            Sys.__char__ = index;
+            // obtenerlo en ch
+            Sys.GetChar char
+            // unir el caracter
+            out %{Out}% $= char;
+
+            out index += 1;
+        }
+    }
+
+    // si inicia con
+    out function %{this}%.startswith(Str:str,Out:Boolean)
+    {
+        // la longitud
+        len = Sys.Len[%{Str}%];
+
+        // obtener el string inicial
+        %{this}%.substring(0, len, stm);
+
+        // retornar
+        out %{Out}% = Syntax["stm==%{Str}%"];
     }
 
     // seprar
     out function %{this}%.split(Splitter:str, ReturnOn:Array)
     {
+        out %{this}% $= %{Splitter}%;
         // la parte actual del string que se usara
         part = "";
         // crear array
@@ -77,38 +158,65 @@ out function String.new(this:key, Str:str)
         len = Sys.len[%{this}%];
         // el indexeador
         index = 0;
+        // la longitud del separador
+        split_len = Sys.len[%{Splitter}%];
 
         // indexear
-        for (len)
+        for (len, index)
         {
-            // ajustar el str del sistema actual
-            Sys.__str__ = %{this}%;
-            // ajustar el caracter a obtener
-            Sys.__char__ = index;
-            // obtenerlo en ch
-            Sys.GetChar ch
+            // recuperador del index
+            out recindex = index;
+            // extraerlo
+            %{this}%.substring(index, split_len, ch);
+            // recuperarlo
+            index = recindex;
+
+            //Sys.Out part
 
             // si es el caracter
             if Syntax["ch==%{Splitter}%"] then {
+                // saltar el separador
+                index += split_len;
                 // poner la parte del array
                 %{ReturnOn}%.push(part);
                 // vaciar la parte actual
                 part = "";
             } 
             else {
+                out recindex = index;
+                %{this}%.substring(index, 1, ch);
+                index = recindex;
+
                 // juntarlo
                 part $= ch; 
+                // siguiente caracter
+                index += 1;
             }
-            index += 1;
-            //
         }
         // poner la parte del array
         %{ReturnOn}%.push(part);
         // vaciar la parte actual
         part = "";
-        //
     }
-    //
+}
+
+// funcion para tabla ASCII
+out function Colors.new(this:key)
+{
+    // rojo
+    out %{this}%.red = "@ASCII:31m";
+    // verde
+    out %{this}%.green = "@ASCII:32m";
+    // amarillo
+    out %{this}%.yellow = "@ASCII:33m";
+    // azul
+    out %{this}%.blue = "@ASCII:34m";
+    // magenta
+    out %{this}%.magenta = "@ASCII:35m";
+    // cian
+    out %{this}%.cyan = "@ASCII:36m";
+    // gris
+    out %{this}%.gray = "@ASCII:37m";
 }
 
 // declarar el sistema principal

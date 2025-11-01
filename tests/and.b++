@@ -1,0 +1,23 @@
+Boolean.new(Boolean_01, "false");
+Boolean.new(Boolean_02, "true");
+// andearlo con el boolean 2
+Boolean_01.and(Boolean_02);
+Sys.Out Boolean_01
+
+Boolean.new(Boolean_11, "true");
+Boolean.new(Boolean_12, "false");
+// andearlo con el boolean 2
+Boolean_11.and(Boolean_12);
+Sys.Out Boolean_11
+
+Boolean.new(Boolean_21, "true");
+Boolean.new(Boolean_22, "true");
+// andearlo con el boolean 2
+Boolean_21.and(Boolean_22);
+Sys.Out Boolean_21
+
+Boolean.new(Boolean_31, "false");
+Boolean.new(Boolean_32, "false");
+// andearlo con el boolean 2
+Boolean_31.and(Boolean_32);
+Sys.Out Boolean_31

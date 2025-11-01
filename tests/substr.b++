@@ -1,0 +1,7 @@
+// el substring
+
+require String.new;
+
+String.new(MyString, "Hello World!");
+MyString.substring(0, 5, MySubString);
+Sys.Out MySubString

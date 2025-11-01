@@ -10,6 +10,7 @@
 
 const fs = require("fs");
 const readline = require('readline');
+const path = require('path');
 
 /**
  * Envioriment
@@ -70,6 +71,18 @@ function readl(ask) {
 }
 
 /**
+ * StringScape
+ * 
+ * codigos de escape en Banana++
+ * @param {string} str el string
+ * @returns el string escapado
+ */
+function StringScape(str)
+{
+    return str.replaceAll("@ASCII:","\x1b[");
+}
+
+/**
  * SyntaxSolve
  * 
  * soluciona la sintaxis
@@ -86,7 +99,7 @@ function SyntaxSolve(Syntax, Env)
     else if (Env.variables.has(Syntax)) return Env.variables.get(Syntax);
     
     // 'x' y "x"
-    else if ((Syntax.startsWith("\"") && Syntax.endsWith("\""))) return Syntax.substring(1, Syntax.length - 1);
+    else if ((Syntax.startsWith("\"") && Syntax.endsWith("\""))) return StringScape(Syntax.substring(1, Syntax.length - 1));
 
     // Syntax["x"]
     else if (Syntax.startsWith("Syntax[\"") && Syntax.endsWith("\"]")) return SyntaxSolve(Syntax.substring(8, Syntax.length - 2), Env);
@@ -110,6 +123,18 @@ function SyntaxSolve(Syntax, Env)
     //else if (Syntax.startsWith("Sys.Read[") && Syntax.endsWith("]")) return await readl(SyntaxSolve(Syntax.substring(9, Syntax.length - 1)));
 
     return Syntax;
+}
+
+/**
+ * NormalizePath
+ * 
+ * normaliza la carpeta
+ * @param {string} directory el directorio
+ * @returns {string} normalizado
+ */
+function NormalizePath(directory)
+{
+    return directory.replaceAll("/", path.sep);
 }
 
 /**
@@ -225,19 +250,20 @@ function ExCode(Code, Env)
     let GoToReturn = false;
     let GoToAsign = false;
     let GoToAsignOp = false;
+    let SysWarnStatment = false;
     let SysDotOutStatment = false;
     let Operator = "";
     let line = "";
     let AsignTo = "";
     let InString = false;
-    let ForWhat = "";
     let IsInFor = false;
     let SysGetChar = false;
     let InIfDef = false;
-    let IfIfBody = "";
-    let IfElseBody = "";
     let IfCondition = "";
-    let WaitingForElse = false;
+    let importfile = false;
+    let filestoimport = [];
+    let requirethings = false;
+    let thingstorequire = [];
 
     for (let Recorrer = 0; Recorrer < Code.length; Recorrer++) {
         // el caracter actual
@@ -341,6 +367,36 @@ function ExCode(Code, Env)
                     }
 
                 }
+                // requerir cosas
+                else if (requirethings == true)
+                {
+                    requirethings = false;
+                    thingstorequire.push(Word);
+
+                    for (const elemental of thingstorequire) {
+                        if (!(EnvNew.locals.has(elemental) || EnvNew.variables.has(elemental))) {
+                            return EnvNew; // esto sí interrumpe el flujo externo
+                        }
+                    }
+
+                    thingstorequire = [];
+                }
+                // importar archivos
+                else if (importfile == true)
+                {
+                    importfile = false;
+                    filestoimport.push(Word);
+
+                    filestoimport.forEach(elemental => {
+                        if (fs.existsSync(NormalizePath(SyntaxSolve(elemental, EnvNew))))
+                        {
+                            let file_content = fs.readFileSync(NormalizePath(SyntaxSolve(elemental, EnvNew)) , 'utf-8');
+                            EnvNew = ExCode(file_content, EnvNew);
+                        }
+                    });
+
+                    filestoimport = [];
+                }
                 // crear funcion
                 else if (line.endsWith(");"))
                 {
@@ -373,7 +429,7 @@ function ExCode(Code, Env)
                     fn = fn.substring(1, fn.length - 2).trim();
 
                     //console.log(fn);
-                    EnvNew = ExCode(fn, EnvNew);
+                    EnvNew = ExCode(fn + "\n//.", EnvNew);
                 }
 
                 // vaciar la linea
@@ -385,7 +441,29 @@ function ExCode(Code, Env)
             {
                 line = "";
                 Recorrer += 2;
-                while (Recorrer < Code.length && Code[Recorrer] != '\n') Recorrer++;
+
+                if (
+                    Code[Recorrer] == '(' &&
+                    Code[Recorrer + 1] == '(' &&
+                    Code[Recorrer + 2] == '('
+                )
+                {
+                    while (Recorrer < Code.length)
+                    {
+                        if (
+                            Code[Recorrer] == ')' &&
+                            Code[Recorrer + 1] == ')' &&
+                            Code[Recorrer + 2] == ')'     
+                        )
+                        {
+                            Recorrer += 2;
+                            break;
+                        }
+
+                        Recorrer++;
+                    }
+                }
+                else { while (Recorrer < Code.length && Code[Recorrer] != '\n') Recorrer++; }
             }
 
             
@@ -394,6 +472,12 @@ function ExCode(Code, Env)
             {
                 InIfDef = true;
             }
+
+            // import
+            else if (Word == "import") importfile = true;
+
+            // require
+            else if (Word == "require") {requirethings = true;}
 
             // then
             else if (Word == "then" && InIfDef == true)
@@ -448,11 +532,11 @@ function ExCode(Code, Env)
             
                 if (IfCondition == "true")
                 {
-                    EnvNew = ExCode(IfTrueCode, EnvNew);
+                    EnvNew = ExCode(IfTrueCode+ "\n//.", EnvNew);
                 }
                 else
                 {
-                    EnvNew = ExCode(IfFalseCode, EnvNew);
+                    EnvNew = ExCode(IfFalseCode+ "\n//.", EnvNew);
                 }
             }
 
@@ -461,6 +545,9 @@ function ExCode(Code, Env)
 
             // impresion
             else if (Word == "Sys.Out") SysDotOutStatment = true;
+
+            // advertencia
+            else if (Word == "Sys.Warn") SysWarnStatment = true;
 
             // poner en el principal
             else if (Word == "out") PutInOut = true;
@@ -530,6 +617,14 @@ function ExCode(Code, Env)
 
                     EnvNew.variables.set(Word, Str[CharGet]);
                 }
+                else if (requirethings == true)
+                {
+                    thingstorequire.push(Word);
+                }
+                else if (importfile == true)
+                {
+                    filestoimport.push(Word);
+                }
                 else if (IsInFor)
                 {
                     let Treads = 0;
@@ -548,12 +643,24 @@ function ExCode(Code, Env)
                     let Params = GetParams(FunctionBody);
                     let ForIterations = Number(SyntaxSolve(Params[0], EnvNew));
                     
+                    let HaveIndex = false;
+                    let IndexVar = "";
+                    if (Params.length == 2)
+                    {
+                        IndexVar = Params[1];
+                    }
+
                     let BodyCode = FunctionBody.substring(FunctionBody.split("{")[0].length).trim();
                     BodyCode = BodyCode.substring(1, BodyCode.length - 2).trim();
 
-                    for (let index = 0; index < ForIterations; index++) {            
-                        EnvNew = ExCode(BodyCode, EnvNew);
+                    for (let index = (HaveIndex ? SyntaxSolve(IndexVar, EnvNew) : 0); index < (HaveIndex ? SyntaxSolve(IndexVar, EnvNew) : ForIterations); index++) {            
+                        EnvNew = ExCode(BodyCode+ "\n//.", EnvNew);
                     }
+                }
+                else if (SysWarnStatment == true)
+                {
+                    SysWarnStatment = false;
+                    console.warn(SyntaxSolve(Word, EnvNew));
                 }
                 else if (SysDotOutStatment == true)
                 {
@@ -562,7 +669,7 @@ function ExCode(Code, Env)
                 }
                 else if (GoToReturn == true)
                 {
-                    EnvNew.retval = (Word);
+                    EnvNew.retval = SyntaxSolve(Word, EnvNew);
                     return EnvNew;
                 }
             }
@@ -579,6 +686,13 @@ function ExCode(Code, Env)
     });
     return EnvNew;
 }
+
+/**
+ * use_stdlib
+ * 
+ * si usa la libreria std
+ */
+let use_stdlib = true;
 
 /**
  * envi
@@ -629,7 +743,7 @@ const rl = readline.createInterface({input: process.stdin, output: process.stdou
  */
 function cli() {
     
-    rl.question('Banana++ Console> ', (respuesta) => {
+    rl.question('> ', (respuesta) => {
         if (respuesta.toLowerCase() === '.exit') {
             rl.close();
             return;
@@ -637,12 +751,25 @@ function cli() {
         else if (respuesta == ".env")
         {
             envi.variables.forEach((val, key, map) => {
-                console.log(`${key} = ${val}`) 
+                console.log(`\x1b[32m${key}\x1b[0m = \x1b[34m${val}`) 
             });
 
             envi.locals.forEach((val, key, map) => {
                 console.log(`${key} = ${val}`) 
             });
+        }
+        else if (respuesta == ".mem")
+        {
+            envi.variables.forEach((val, key, map) => {
+                console.log(`\x1b[32m${key}\x1b[34m;\x1b[0m`) 
+            });
+
+            envi.locals.forEach((val, key, map) => {
+                console.log(`\x1b[32m${key}\x1b[34m;\x1b[0m`) 
+            });
+        }
+        else {
+            envi = ExCode(respuesta + " ", envi);
         }
 
     cli();
@@ -653,6 +780,8 @@ function cli() {
 args.forEach(arg => {
     // cambiar a modo argumentos
     if (arg == "--args") params_mode = true;
+    // si no se va a usar la libreria std
+    else if (arg == "--nonstdlib") use_stdlib = false;
     // añadir archivo
     else if (params_mode == false) {
         const codef = fs.readFileSync(arg, 'utf8');
@@ -674,5 +803,16 @@ envi.variables.set("#Sys.Argv", parameters.length);
 // ejecutar archivo uno por uno
 files_to_execute.forEach(element => {  envi = ExCode(element, envi); });
 
-// llamar a la command line
-cli();
+// llamar a la command line?
+if (files_to_execute.length == 0 ) {
+    if (use_stdlib == true) {  
+        console.log("Cargando libreria std");
+        if (fs.existsSync("stdlib.b++")) {
+            envi = ExCode(fs.readFileSync("stdlib.b++", 'utf8'), envi);
+            console.log("Libreria std cargada");
+        }
+        else console.log("No hay ningun archivo 'stdlib.b++' en el directorio princiapl");
+    }
+    else console.log("increible programador, te arreglaras la vida solo, eso no se ve todos los dias")
+    cli();
+}

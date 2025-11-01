@@ -1,0 +1,6 @@
+// si inicia con
+
+require String.new;
+
+// inicia el string nuevo
+String.new(MyString, "Foo Bar");
