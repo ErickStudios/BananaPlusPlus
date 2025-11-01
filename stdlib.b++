@@ -34,21 +34,47 @@ out function Array.GetFrom(array:Array, index:num, reton:out)
     out %{reton}% = Syntax[VarSyntax[%{array}%[@get[%{index}%]]]];
 }
 
+// funciones del sistema
+out function SysInternal.new(this:key)
+{
+    // imprime algo
+    out function %{this}%.print(Str:str)
+    {
+        Sys.Out %{Str}%
+        // linea para evitar cosas raras
+    }
+    
+    // lee la linea
+    out function %{this}%.readline(Ask:str, Out:Out[str])
+    {
+        out %{Out}% = Sys.Read[%{Ask}%]
+        //?
+    }
+}
+
 // el tipo de cadena
 out function String.new(this:key, Str:str)
 {
     // el string
     out %{this}% = %{Str}%;
 
+    // lo une con otro string
+    out function %{this}%.join(OtherStr:str)
+    {
+        // los une
+        out %{this}% $= %{OtherStr}%;
+        //
+    }
+
     // seprar
     out function %{this}%.split(Splitter:str, ReturnOn:Array)
-    {        
+    {
         // la parte actual del string que se usara
         part = "";
         // crear array
-        Array.new(ReturnOn, str);
+        Array.new(%{ReturnOn}%, str);
         // longitud
-        len = Sys.len(%{this}%);
+        len = Sys.len[%{this}%];
         // el indexeador
         index = 0;
 
@@ -60,19 +86,30 @@ out function String.new(this:key, Str:str)
             // ajustar el caracter a obtener
             Sys.__char__ = index;
             // obtenerlo en ch
-            Sys.GetChar ch;
+            Sys.GetChar ch
 
             // si es el caracter
-            if ch == %{Splitter}% then {
+            if Syntax["ch==%{Splitter}%"] then {
                 // poner la parte del array
-                ReturnOn.push(part);
+                %{ReturnOn}%.push(part);
                 // vaciar la parte actual
                 part = "";
-            else
+            } 
+            else {
                 // juntarlo
                 part $= ch; 
             }
             index += 1;
+            //
         }
+        // poner la parte del array
+        %{ReturnOn}%.push(part);
+        // vaciar la parte actual
+        part = "";
+        //
     }
+    //
 }
+
+// declarar el sistema principal
+SysInternal.new(Sys);

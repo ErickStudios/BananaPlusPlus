@@ -4,84 +4,18 @@
  * un lenguaje de programacion rapido y portable
  */
 
+//
+// rincon de inclusion
+//
+
+const fs = require("fs");
+const readline = require('readline');
+
 /**
- * stdlib
+ * Envioriment
  * 
- * la libreria std de Banana++
+ * representa el entorno de ejecucion
  */
-let stdlib = `
-// el valor nulo
-out null = "";
-
-// el tipo de array es una lista
-out function Array.new(this:key, Ty:lang_type)
-{
-    // longitud
-    out #%{this}% = 0;
-
-    // añade un elemento nuevo a la lista
-    out function %{this}%.push(item:%{Ty}%)
-    {
-        // añade el elemento a la lista
-        out %{this}%[@get[#%{this}%]] = %{item}%;
-        // incrementa la longitud
-        out #%{this}% += 1;
-    }
-
-    // elimina el ultimo
-    out function %{this}%.pop()
-    {
-        // decrementa la longitud
-        out #%{this}% -= 1;
-        // setea a null
-        out %{this}%[@get[#%{this}%]] = null;
-    }
-}
-
-// el tipo de cadena
-out function String.new(this:key, Str:str)
-{
-    // el string
-    out %{this}% = %{Str}%;
-
-    // seprar
-    out function %{this}%.split(Splitter:str, ReturnOn:Array)
-    {        
-        // la parte actual del string que se usara
-        part = "";
-        // crear array
-        Array.new(ReturnOn, str);
-        // longitud
-        len = Sys.len(%{this}%);
-        // el indexeador
-        index = 0;
-
-        // indexear
-        for (len)
-        {
-            // ajustar el str del sistema actual
-            Sys.__str__ = %{this}%;
-            // ajustar el caracter a obtener
-            Sys.__char__ = index;
-            // obtenerlo en ch
-            Sys.GetChar ch;
-
-            // si es el caracter
-            if ch == %{Splitter}% then {
-                // poner la parte del array
-                ReturnOn.push(part);
-                // vaciar la parte actual
-                part = "";
-            else
-                // juntarlo
-                part $= ch; 
-            }
-            index += 1;
-        }
-    }
-}
-`;
-
 class Envioriment {
     /** 
      * variables y funciones persistentes
@@ -121,6 +55,21 @@ class Envioriment {
 }
 
 /**
+ * readl
+ * 
+ * lee la linea
+ * @param {string} ask la pregunta
+ * @returns la respuesta
+ */
+function readl(ask) {
+  return new Promise((resolve) => {
+    rl.question(ask, (answer) => {
+      resolve(answer);
+    });
+  });
+}
+
+/**
  * SyntaxSolve
  * 
  * soluciona la sintaxis
@@ -139,14 +88,26 @@ function SyntaxSolve(Syntax, Env)
     // 'x' y "x"
     else if ((Syntax.startsWith("\"") && Syntax.endsWith("\""))) return Syntax.substring(1, Syntax.length - 1);
 
+    // Syntax["x"]
+    else if (Syntax.startsWith("Syntax[\"") && Syntax.endsWith("\"]")) return SyntaxSolve(Syntax.substring(8, Syntax.length - 2), Env);
+
     // VarSyntax[x]
     else if (Syntax.startsWith("VarSyntax[") && Syntax.endsWith("]")) return VarSyntax(Syntax.substring(10, Syntax.length - 1), Env);
 
     // Syntax[x]
     else if (Syntax.startsWith("Syntax[") && Syntax.endsWith("]")) return SyntaxSolve(Syntax.substring(7, Syntax.length - 1), Env);
 
-    // Sys.len(x)
+    // Sys.len[x]
     else if (Syntax.startsWith("Sys.len[") && Syntax.endsWith("]")) return String(SyntaxSolve(Syntax.substring(8, Syntax.length - 1), Env).length); 
+
+    // x==y
+    if (Syntax.split("==").length == 2) 
+    { 
+        return String(SyntaxSolve(Syntax.split("==")[0], Env) == SyntaxSolve(Syntax.split("==")[1], Env))
+    }
+
+    // Sys.Read[]
+    //else if (Syntax.startsWith("Sys.Read[") && Syntax.endsWith("]")) return await readl(SyntaxSolve(Syntax.substring(9, Syntax.length - 1)));
 
     return Syntax;
 }
@@ -231,6 +192,18 @@ function GetParams(func)
 }
 
 /**
+ * IsAValidCharForWord
+ * 
+ * si es un caracter valido para una palabra
+ * @param {string} element el caracter
+ * @returns si es
+ */
+function IsAValidCharForWord(element)
+{
+    return (IsWhileSpace(element) == false && element != '&' && element != '|' && element != '+' && element != '$' && element != '-' && element != '=' && element != '/' && element != '*' && element != '(' && element != ')' && element != '{' && element != '}' && element != ':' && element != ';');
+}
+
+/**
  * ExCode
  * 
  * ejecuta un codigo
@@ -260,6 +233,11 @@ function ExCode(Code, Env)
     let ForWhat = "";
     let IsInFor = false;
     let SysGetChar = false;
+    let InIfDef = false;
+    let IfIfBody = "";
+    let IfElseBody = "";
+    let IfCondition = "";
+    let WaitingForElse = false;
 
     for (let Recorrer = 0; Recorrer < Code.length; Recorrer++) {
         // el caracter actual
@@ -268,9 +246,23 @@ function ExCode(Code, Env)
         // añadir a la linea
         line += element;
 
+        if (element == "\\" && InString)
+        {
+            if (Code[Recorrer + 1] == "\"")
+            {
+                Word += "\"";
+                Recorrer++;
+                continue;
+            }
+        }
         if (element == "\"")
         {
             InString = !InString;
+        }
+
+        if (InIfDef == true)
+        {
+            IfCondition += element;
         }
 
         // mas para la palabra
@@ -396,6 +388,74 @@ function ExCode(Code, Env)
                 while (Recorrer < Code.length && Code[Recorrer] != '\n') Recorrer++;
             }
 
+            
+            // if
+            else if (Word == "if") 
+            {
+                InIfDef = true;
+            }
+
+            // then
+            else if (Word == "then" && InIfDef == true)
+            {
+                InIfDef = false;
+                IfCondition = IfCondition.replaceAll("then", "").trim()
+                IfCondition = SyntaxSolve(IfCondition, EnvNew);
+
+                let Treads = 0;
+                let FunctionBody = "";
+                let havem = false;
+                while ((havem == true ? (Treads != 0) : true) && Recorrer < Code.length) {
+                    FunctionBody += Code[Recorrer];
+                    if (Code[Recorrer] == '{') { Treads++; havem = true;}
+                    else if (Code[Recorrer] == '}') Treads--;
+                    Recorrer++;
+                }
+                line = ""; 
+                let BodyCode = FunctionBody.trim().substring(1, FunctionBody.trim().length - 1);
+                let IfTrueCode = BodyCode;
+                let IfFalseCode = "";
+
+                while (Recorrer < Code.length && IsWhileSpace(Code[Recorrer])) Code[Recorrer++];
+
+                if (
+                    Recorrer + 4 < Code.length &&
+                    Code[Recorrer] === 'e' &&
+                    Code[Recorrer + 1] === 'l' &&
+                    Code[Recorrer + 2] === 's' &&
+                    Code[Recorrer + 3] === 'e' &&
+                    !IsAValidCharForWord(Code[Recorrer + 4])
+                ) {
+                    Recorrer += 4;
+                    while (Recorrer < Code.length && IsWhileSpace(Code[Recorrer])) Code[Recorrer++];
+
+                    if (Code[Recorrer] == '{')
+                    {
+                        Treads = 0;
+                        FunctionBody = "";
+                        havem = false;
+                        while ((havem == true ? (Treads != 0) : true) && Recorrer < Code.length) {
+                            FunctionBody += Code[Recorrer];
+                            if (Code[Recorrer] == '{') { Treads++; havem = true;}
+                            else if (Code[Recorrer] == '}') Treads--;
+                            Recorrer++;
+                        }
+                        line = ""; 
+                        BodyCode = FunctionBody.trim().substring(1, FunctionBody.trim().length - 1);
+                        IfFalseCode = BodyCode;
+                    }
+                }
+            
+                if (IfCondition == "true")
+                {
+                    EnvNew = ExCode(IfTrueCode, EnvNew);
+                }
+                else
+                {
+                    EnvNew = ExCode(IfFalseCode, EnvNew);
+                }
+            }
+
             // obtencion de caracteres
             else if (Word == "Sys.GetChar") SysGetChar = true;
 
@@ -491,7 +551,6 @@ function ExCode(Code, Env)
                     let BodyCode = FunctionBody.substring(FunctionBody.split("{")[0].length).trim();
                     BodyCode = BodyCode.substring(1, BodyCode.length - 2).trim();
 
-                    console.log(ForIterations);
                     for (let index = 0; index < ForIterations; index++) {            
                         EnvNew = ExCode(BodyCode, EnvNew);
                     }
@@ -521,49 +580,99 @@ function ExCode(Code, Env)
     return EnvNew;
 }
 
+/**
+ * envi
+ * 
+ * el entorno principal del interprete
+ */
 let envi = new Envioriment();
 
-// ejecutar el stdlib y despues estamos listos
-//envi = ExCode(stdlib, envi);
-
+/**
+ * args
+ * 
+ * los argumentos
+ */
 let args = process.argv.slice(2);
+
+/**
+ * parameters
+ * 
+ * los parametros guardados
+ */
 let parameters = [];
+
+/**
+ * params_mode
+ * 
+ * si esta en modo seleccionar parametros
+ */
 let params_mode = false;
+
+/**
+ * files_to_execute
+ * 
+ * los archivos a ejecutar
+ */
 let files_to_execute = [];
 
-const fs = require("fs");
-const { env } = require("process");
+/**
+ * rl
+ * 
+ * el lector de linea de cli
+ */
+const rl = readline.createInterface({input: process.stdin, output: process.stdout});
 
+/**
+ * cli
+ * 
+ * la linea de comandos
+ */
+function cli() {
+    
+    rl.question('Banana++ Console> ', (respuesta) => {
+        if (respuesta.toLowerCase() === '.exit') {
+            rl.close();
+            return;
+        }
+        else if (respuesta == ".env")
+        {
+            envi.variables.forEach((val, key, map) => {
+                console.log(`${key} = ${val}`) 
+            });
+
+            envi.locals.forEach((val, key, map) => {
+                console.log(`${key} = ${val}`) 
+            });
+        }
+
+    cli();
+  });
+}
+
+// leer parametros
 args.forEach(arg => {
-    if (arg == "--args")
-    {
-        params_mode = true;
-    }
+    // cambiar a modo argumentos
+    if (arg == "--args") params_mode = true;
+    // añadir archivo
     else if (params_mode == false) {
         const codef = fs.readFileSync(arg, 'utf8');
-        
         files_to_execute.push(codef);
     }
-    else {
-        parameters.push(arg);
-    }
+    // añadir parametro
+    else parameters.push(arg);
 });
 
+// para los parametros
 parameters.forEach((element, index, array) => {
+    // añadirlo al entorno
     envi.variables.set(`Sys.Argv[${index.toString()}]`, element);
 });
 
+// añade el numero de parametros, si , creamos un readonly Array de stdlib.bpp (osea que no tiene ni un metodo de cualquier Array y solo es leible)
 envi.variables.set("#Sys.Argv", parameters.length);
 
-files_to_execute.forEach(element => {
-    envi = ExCode(element, envi);
-});
+// ejecutar archivo uno por uno
+files_to_execute.forEach(element => {  envi = ExCode(element, envi); });
 
-/*
-envi.variables.forEach((val, key, map) => {
-   console.log(`${key} = ${val}`) 
-});
-
-envi.locals.forEach((val, key, map) => {
-   console.log(`${key} = ${val}`) 
-});*/
+// llamar a la command line
+cli();

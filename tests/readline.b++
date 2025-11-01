@@ -1,0 +1,19 @@
+// nueva palabra clave `require`, si algo no esta definido detiene el hilo actual
+// verificar si se han definido estos 2
+
+require Sys.print Sys.readline null;
+
+// ahora si vamos con el programa
+
+nombre = null;
+pregunta = "¿Como te llamas?";
+
+// preguntarlo
+Sys.readline(pregunta, nombre);
+
+imprimir = "Oh, ¡hola ";
+imprimir $= nombre;
+imprimir $= "!";
+
+// imprimi eso
+Sys.print(imprimir);
