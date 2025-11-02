@@ -1,57 +1,45 @@
-// el valor nulo
+//(((/**
+* libreria std de Banana++
+*/)))
+
+// requerir variables que tienen que estar, y que no se declaran por codigo
+require Sys.PathSep Sys.PathDelimiter;
+//(((representa nada en absoluto)))
 out null = "";
-
+//(((valor boolean para representar que no es cierta una condicion)))
 out False = "false";
+//(((valor boolean para representar que es cierta una condicion)))
 out True = "true";
-
-// valores booleanos
+//(((funcion para instanciar un valor booleano)))
 out function Boolean.new(this:key, Val:boolean)
 {
+    //(((representa el valor interno de %{this}%)))
     out %{this}% = %{Val}%; 
-
-    // invertir su valor
+    //(((esta funcion invierte el valor interno de %{this}%)))
     out function %{this}%.not()
     {
-        // true -> false
         if Syntax["%{this}%==true"] then { out %{this}% = "false"; }
-        // false/null -> true
         else { out %{this}% = "true"; }
     }
-
-    // comparar 2 booleanos sin son verdadero
+    //((esta funcion ))
     out function %{this}%.and(other:boolean)
     {
         TrueTwo = "true";
-
-        // si el actual es falso la rego
-        if Syntax["%{this}%==false"] then { TrueTwo = False; }
-
-        // si el otro es falso, la rego
-        if Syntax["%{other}%==false"] then { TrueTwo = False; }
-
+        // comparar los dos si son verdadero
+        if Syntax["%{this}%==false"] then { TrueTwo = False; } if Syntax["%{other}%==false"] then { TrueTwo = False; }
         // devolver el resultado
         out %{this}% = TrueTwo;
     }
-
-    // verificar si es true
-    if Syntax["%{Val}%==true"] then { Sys.Out "es true" }
-    else { 
-        // si es falso
-        if Syntax["%{Val}%==false"] then { Sys.Out "es false" }
-        // si no es ni verdadero ni falso, pues, ni como ayudarlo
-        else {
-            Sys.Warn "El valor es invalido"
-        }
-    }
+    if Syntax["%{Val}%==true"] then { }
+    else { if Syntax["%{Val}%==false"] then { } else { Sys.Warn "El valor es invalido" } }
 }
-
-// el tipo de array es una lista
+//(((instancia el tipo de array, un array es una lista de elementos
+que puede ser indexados, cambiados y contables)))
 out function Array.new(this:key, Ty:lang_type)
 {
-    // longitud
+    //(((la cantidad de elementos de %{this}%)))
     out #%{this}% = 0;
-
-    // añade un elemento nuevo a la lista
+    //(((añade un elemento hasta la ultima posicion de la lista %{this}%)))
     out function %{this}%.push(item:%{Ty}%)
     {
         // añade el elemento a la lista
@@ -59,8 +47,7 @@ out function Array.new(this:key, Ty:lang_type)
         // incrementa la longitud
         out #%{this}% += 1;
     }
-
-    // elimina el ultimo
+    //(((elimina el ultimo elemento de la lista %{this}%)))
     out function %{this}%.pop()
     {
         // decrementa la longitud
@@ -69,84 +56,67 @@ out function Array.new(this:key, Ty:lang_type)
         out %{this}%[@get[#%{this}%]] = null;
     }
 }
-
-// obtiene un elemento de algun Array
+//(((obtiene un elemento de un array desde fuera)))
 out function Array.GetFrom(array:Array, index:num, reton:out)
 {
     Sys.Out Syntax[VarSyntax[%{array}%[@get[%{index}%]]]]
     // devolverlo
     out %{reton}% = Syntax[VarSyntax[%{array}%[@get[%{index}%]]]];
 }
-
-// funciones del sistema
+//(((contiene las funciones del sistema)))
 out function SysInternal.new(this:key)
 {
-    // imprime algo
-    out function %{this}%.print(Str:str)
-    {
-        Sys.Out %{Str}%
-        // linea para evitar cosas raras
+    //(((imprime algo en pantalla)))
+    out function %{this}%.print(Str:str) {
+         Sys.Out %{Str}% //
     }
-    
-    // lee la linea
-    out function %{this}%.readline(Ask:str, Out:Out[str])
-    {
-        out %{Out}% = Sys.Read[%{Ask}%]
-        //?
+    //(((lee algo que pondra el usuario)))
+    out function %{this}%.readline(Ask:str, Out:Out[str]) { 
+        out %{Out}% = Sys.Read[%{Ask}%]; 
     }
 }
-
-// el tipo de cadena
+//(((el tipo de strings, un string es una secuencia de caracteres como letras y numeros juntos para formar texto)))
 out function String.new(this:key, Str:str)
 {
-    // el string
+    //(((contiene el contenido interno de %{this}%)))
     out %{this}% = %{Str}%;
-
-    // lo une con otro string
+    //(((une %{this}% con otro string ya sea instanciado con esta clase o uno plano)))
     out function %{this}%.join(OtherStr:str)
     {
-        // los une
         out %{this}% $= %{OtherStr}%;
     }
-
-    // extraer
+    //(((extrae una secuencia de texto empezando desde un inicio (que empieza en 0
+     para el primer caracter) y la longitud de la cadena que se extraera, el ultimo
+      parametro es la variable donde retornara el string, esta se instanciara automaticamente 
+      con esta clase)))
     out function %{this}%.substring(Start:num, Lenstr:num, Out:Out[str])
     {
         // empezar el index
         out index = %{Start}%;
 
         // vaciar la cadena
-        out %{Out}% = "";
+        String.new(%{Out}%, "");
 
         for (%{Lenstr}%)
         {
-            // ajustar el str del sistema actual
-            Sys.__str__ = %{this}%;
-            // ajustar el caracter a obtener
-            Sys.__char__ = index;
-            // obtenerlo en ch
-            Sys.GetChar char
-            // unir el caracter
-            out %{Out}% $= char;
-
+            // obtiene el caracter actual
+            Sys.__str__ = %{this}%; Sys.__char__ = index; Sys.GetChar char
+            // lo une
+            %{Out}%.join(char);
+            // siguiente caracter
             out index += 1;
         }
     }
-
-    // si inicia con
+    //(((verifica si el string %{this}% inicia con una sentencia, que es el primer parametro
+    el segundo es el boolean que retornara true si coincide el inicio y false si no)))
     out function %{this}%.startswith(Str:str,Out:Boolean)
     {
-        // la longitud
-        len = Sys.Len[%{Str}%];
-
-        // obtener el string inicial
-        %{this}%.substring(0, len, stm);
-
-        // retornar
-        out %{Out}% = Syntax["stm==%{Str}%"];
+        // obtiene si inicia asi
+        len = Sys.Len[%{Str}%]; %{this}%.substring(0, len, stm); out %{Out}% = Syntax["stm==%{Str}%"];
     }
-
-    // seprar
+    //(((separa %{this}% en un array mediante un separador que es otro string que contiene
+    el separador, solo se permite caracteres por que se ha probado con otros pero se bugea bien feo,
+    el segundo parametro contiene el nombre del array que retornara)))
     out function %{this}%.split(Splitter:str, ReturnOn:Array)
     {
         out %{this}% $= %{Splitter}%;
@@ -162,36 +132,13 @@ out function String.new(this:key, Str:str)
         split_len = Sys.len[%{Splitter}%];
 
         // indexear
-        for (len, index)
+        for (len)
         {
-            // recuperador del index
-            out recindex = index;
-            // extraerlo
-            %{this}%.substring(index, split_len, ch);
-            // recuperarlo
-            index = recindex;
+            // obtiene el string
+            Sys.__str__ = %{this}%; Sys.__char__ = index; Sys.GetChar ch
 
-            //Sys.Out part
-
-            // si es el caracter
-            if Syntax["ch==%{Splitter}%"] then {
-                // saltar el separador
-                index += split_len;
-                // poner la parte del array
-                %{ReturnOn}%.push(part);
-                // vaciar la parte actual
-                part = "";
-            } 
-            else {
-                out recindex = index;
-                %{this}%.substring(index, 1, ch);
-                index = recindex;
-
-                // juntarlo
-                part $= ch; 
-                // siguiente caracter
-                index += 1;
-            }
+            if Syntax["ch==%{Splitter}%"] then { %{ReturnOn}%.push(part);part = "";} 
+            else { part $= ch; index += 1;}
         }
         // poner la parte del array
         %{ReturnOn}%.push(part);
@@ -199,8 +146,20 @@ out function String.new(this:key, Str:str)
         part = "";
     }
 }
-
-// funcion para tabla ASCII
+//(((ShellInternal es la clase internal de la shell y los argumentos, para obtenerlos
+y mas funciones del entorno de la shell)))
+out function ShellInternal.new(this:key)
+{
+    //(((obtiene un argumento con un numero que representa el argumento, el segundo
+    parametro contiene donde retornara el argumento)))
+    out function %{this}%.GetArg(argnum:num, Out:Out[str])
+    {
+        Array.GetFrom(Sys.Argv, argnum, Out);
+    }
+}
+//(((Colors es una estructura que contiene strings que tienen los codigos de escape de
+sus colores correspondientes en la termina, stdout o cualquier fuente de texto o salida
+que el interprete tenga permitido manipular)))
 out function Colors.new(this:key)
 {
     // rojo
@@ -218,6 +177,9 @@ out function Colors.new(this:key)
     // gris
     out %{this}%.gray = "@ASCII:37m";
 }
-
-// declarar el sistema principal
+//(((el sistema actual instanciado para poder acceder a sus funciones)))
 SysInternal.new(Sys);
+//(((la shell actual instanciada)))
+ShellInternal.new(Sys.Shell);
+//(((instancia de los colores de consola)))
+Colors.new(Sys.ConsoleColors);

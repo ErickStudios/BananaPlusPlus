@@ -1,7 +1,9 @@
+import "stdlib.b++";
+
 // el string
-String.new(MyString, "Apple||Banana||bar");
+String.new(MyString, "Apple|Banana|bar");
 // separarlo
-MyString.split("||", MyStringSplited);
+MyString.split("|", MyStringSplited);
 // obtener el primer item
 Sys.Out MyStringSplited[0]
 // obtener el segundo item

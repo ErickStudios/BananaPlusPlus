@@ -1,3 +1,5 @@
+import "stdlib.b++";
+
 Boolean.new(Boolean_01, "false");
 Boolean.new(Boolean_02, "true");
 // andearlo con el boolean 2

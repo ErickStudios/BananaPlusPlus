@@ -11,6 +11,7 @@
 const fs = require("fs");
 const readline = require('readline');
 const path = require('path');
+const { env } = require("process");
 
 /**
  * Envioriment
@@ -29,6 +30,12 @@ class Envioriment {
      * @type {Map<string,string>}
      */
     locals;
+
+    /**
+     * variables de lectura namas
+     * @type {Map<string, string>}
+     */
+    constants;
 
     /**
      * valor de retorno
@@ -51,6 +58,7 @@ class Envioriment {
     {
         this.variables = new Map();
         this.locals = new Map();
+        this.constants = new Map();
         this.retval = "";
     }
 }
@@ -97,6 +105,9 @@ function SyntaxSolve(Syntax, Env)
     
     // x
     else if (Env.variables.has(Syntax)) return Env.variables.get(Syntax);
+        
+    // x
+    else if (Env.constants.has(Syntax)) return Env.constants.get(Syntax);
     
     // 'x' y "x"
     else if ((Syntax.startsWith("\"") && Syntax.endsWith("\""))) return StringScape(Syntax.substring(1, Syntax.length - 1));
@@ -239,12 +250,12 @@ function IsAValidCharForWord(element)
 function ExCode(Code, Env)
 {
     
+    // declarar parametros del interpete
+
     let Word = "";
     let VarsThatDeletes = [];
+    let ConstsThatDeletes = [];
     let EnvNew = Env;
-    EnvNew.locals = Env.locals
-    EnvNew.variables = Env.variables;
-
     let PutInOut = false;
     let OnFunction = false;
     let GoToReturn = false;
@@ -264,6 +275,11 @@ function ExCode(Code, Env)
     let filestoimport = [];
     let requirethings = false;
     let thingstorequire = [];
+    let DeclareAsConst = false;
+
+    EnvNew.locals = Env.locals
+    EnvNew.variables = Env.variables;
+    EnvNew.constants = Env.constants;
 
     for (let Recorrer = 0; Recorrer < Code.length; Recorrer++) {
         // el caracter actual
@@ -305,21 +321,31 @@ function ExCode(Code, Env)
                 // si se va a asignar algo
                 if (GoToAsign == true)
                 {
-                    if (PutInOut == false)
+                    if (DeclareAsConst == true)
                     {
-                        if (Env.locals.has(AsignTo) == false)
-                        {
-                            VarsThatDeletes.push(AsignTo);
-                        }
+                        // ah?
+                        if (EnvNew.constants.has(VarSyntax(AsignTo,EnvNew))) return EnvNew;
+
+                        ConstsThatDeletes.push(AsignTo);
+                        EnvNew.constants.set(VarSyntax(AsignTo,EnvNew), SyntaxSolve(Word,EnvNew));
                     }
+                    else {
+                        if (PutInOut == false)
+                        {
+                            if (Env.locals.has(AsignTo) == false)
+                            {
+                                VarsThatDeletes.push(AsignTo);
+                            }
+                        }
 
-                    // va a asignarlo
-                    GoToAsign = false;
+                        // va a asignarlo
+                        GoToAsign = false;
 
-                    // en todo el codigo global
-                    if (PutInOut == true) Env.variables.set(VarSyntax(AsignTo,EnvNew), SyntaxSolve(Word,EnvNew));
-                    // solo en este stack
-                    else Env.locals.set(VarSyntax(AsignTo,EnvNew), SyntaxSolve(Word,EnvNew));
+                        // en todo el codigo global
+                        if (PutInOut == true) Env.variables.set(VarSyntax(AsignTo,EnvNew), SyntaxSolve(Word,EnvNew));
+                        // solo en este stack
+                        else Env.locals.set(VarSyntax(AsignTo,EnvNew), SyntaxSolve(Word,EnvNew));
+                    }
                 }
                 // operadores 
                 else if (GoToAsignOp == true)
@@ -374,7 +400,7 @@ function ExCode(Code, Env)
                     thingstorequire.push(Word);
 
                     for (const elemental of thingstorequire) {
-                        if (!(EnvNew.locals.has(elemental) || EnvNew.variables.has(elemental))) {
+                        if (!(EnvNew.locals.has(elemental) || EnvNew.variables.has(elemental) || EnvNew.constants.has(elemental))) {
                             return EnvNew; // esto sí interrumpe el flujo externo
                         }
                     }
@@ -561,6 +587,9 @@ function ExCode(Code, Env)
             // retornar valor
             else if (Word == "return") GoToReturn = true;
 
+            // const x = val;
+            else if (Word == "const") DeclareAsConst = true;
+
             // asignar
             else if (Code[Recorrer + 1] == '=')
             {
@@ -678,11 +707,14 @@ function ExCode(Code, Env)
         }
     }
 
+    // se despiden las constantes
+    ConstsThatDeletes.forEach(element => {
+        if (EnvNew.constants.has(element)) EnvNew.constants.delete(element);
+    });
+
+    // se despiden las variables locales
     VarsThatDeletes.forEach(element => {
-        if (EnvNew.locals.has(element))
-        {
-            EnvNew.locals.delete(element);
-        }
+        if (EnvNew.locals.has(element)) EnvNew.locals.delete(element);
     });
     return EnvNew;
 }
@@ -765,7 +797,11 @@ function cli() {
             });
 
             envi.locals.forEach((val, key, map) => {
-                console.log(`\x1b[32m${key}\x1b[34m;\x1b[0m`) 
+                console.log(`\x1b[31m${key}\x1b[34m;\x1b[0m`) 
+            });
+                        
+            envi.constants.forEach((val, key, map) => {
+                console.log(`\x1b[33m${key}\x1b[34m;\x1b[0m`) 
             });
         }
         else {
@@ -803,8 +839,13 @@ envi.variables.set("#Sys.Argv", parameters.length);
 // ejecutar archivo uno por uno
 files_to_execute.forEach(element => {  envi = ExCode(element, envi); });
 
+// inicializar variables del entorno
+envi.constants.set("Sys.PathSep", path.sep);
+envi.constants.set("Sys.PathDelimiter", path.delimiter);
+
 // llamar a la command line?
 if (files_to_execute.length == 0 ) {
+
     if (use_stdlib == true) {  
         console.log("Cargando libreria std");
         if (fs.existsSync("stdlib.b++")) {

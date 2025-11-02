@@ -1,4 +1,4 @@
-function MiFuncion()
+out function MiFuncion()
 {
     function MiSubFuncion()
     {
