@@ -1,14 +1,13 @@
-import "stdlib.b++";
+// importar la libreria std
+import "stdlib";
 
-Array.new(MyArray, num);
+// crear array
+Array.new(MyArray, num, 43, 24, 56);
+// declarar el indice
+index = 0;
 
-// [43]
-MyArray.push(43);
-// [43, 24]
-MyArray.push(24);
-// [43, 24, 56]
-MyArray.push(56);
-
-Sys.Out MyArray[0]
-Sys.Out MyArray[1]
-Sys.Out MyArray[2]
+for (#MyArray)
+{
+    Array.GetFrom(MyArray, index, el); Sys.Out el
+    index += 1;
+}

@@ -1,0 +1,10 @@
+{
+  "name": "bananaplusplus",
+  "version": "1.1.5",
+  "description": "Intérprete rápido, portable y fácil de usar",
+  "bin": {
+    "b++": "b++.js"
+  },
+  "author": "ErickCraftStudios",
+  "license": "MIT"
+}

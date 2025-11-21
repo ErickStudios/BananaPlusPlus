@@ -1,0 +1,9 @@
+#ignorar el modulo
+node_modules
+
+#ignorar pruebas
+tests
+# ignorar datos
+data
+#ignorar apps
+apps
