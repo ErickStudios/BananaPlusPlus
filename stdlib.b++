@@ -88,15 +88,15 @@ out function Array.new(this:key, Ty:lang_type, ...)
         out %{this}%[@get[#%{this}%]] = %{item}%;
         // incrementa la longitud
         out #%{this}% += 1;
-        index = 0;
+        index_push = 0;
         for (#Lang.DotDotDot)
         {
-            Array.GetFrom(Lang.DotDotDot, index, prt);            
+            Array.GetFrom(Lang.DotDotDot, index_push, prt);            
             // añade el elemento a la lista
             out %{this}%[@get[#%{this}%]] = prt;
             // incrementa la longitud
             out #%{this}% += 1;
-            index += 1;
+            index_push += 1;
         }
     }
     //(((elimina el ultimo elemento de la lista %{this}%)))
@@ -116,6 +116,19 @@ out function Array.new(this:key, Ty:lang_type, ...)
     out function %{this}%.set(item:num, element:%{Ty}%)
     {
         Array.SetTo(%{this}%, %{item}%, %{element}%);
+    }
+    //(((para cada quien)))
+    out function %{this}%.forEach(callback:()->callback:any)
+    {
+        index = 0;
+        for (#%{this}%)
+        {
+            Array.GetFrom(%{this}%, index, el);
+            func = %{callback}%;
+            func(el, index);
+            index += 1;
+            delete el
+        }
     }
     //(((convierte algo a str)))
     out function %{this}%.ToStr(Out:str)
@@ -201,31 +214,31 @@ out function String.new(this:key, Str:str)
     el segundo parametro contiene el nombre del array que retornara)))
     out function %{this}%.split(Splitter:str, ReturnOn:Array)
     {
+        out Splitter = %{Splitter}%;
         out %{this}% $= %{Splitter}%;
         // la parte actual del string que se usara
-        part = "";
+        out part = "";
         // crear array
         Array.new(%{ReturnOn}%, str);
         // longitud
-        len = Sys.len[%{this}%];
+        len_split = Sys.len[%{this}%];
         // el indexeador
-        index = 0;
+        index_split = 0;
         // la longitud del separador
         split_len = Sys.len[%{Splitter}%];
-
         // indexear
-        for (len)
+        for (len_split)
         {
             // obtiene el string
-            Sys.__str__ = %{this}%; Sys.__char__ = index; Sys.GetChar ch
-
-            if Syntax["ch==%{Splitter}%"] then { %{ReturnOn}%.push(part);part = "";} 
-            else { part $= ch; index += 1;}
+            Sys.__str__ = %{this}%; Sys.__char__ = index_split; Sys.GetChar ch
+            if Syntax["ch==Splitter"] then { %{ReturnOn}%.push(part); out part = ""; a } 
+            else { out part $= ch; }
+            index_split += 1; // e
         }
         // poner la parte del array
         %{ReturnOn}%.push(part);
         // vaciar la parte actual
-        part = "";
+        out part = "";
     }
     //(((convierte el string en una lista con todos los caracteres que tiene)))
     out function %{this}%.ToCharArray(Out:array)
@@ -322,12 +335,12 @@ out function LangExtended.new(this:key)
     //(((exporta un valor fugas osea uno que no es out o un const)))
     out function %{this}%.export(...:key)
     {
-        index = 0;
+        index_export = 0;
         for (#Lang.DotDotDot)
         {
-            Array.GetFrom(Lang.DotDotDot, index, value);
+            Array.GetFrom(Lang.DotDotDot, index_export, value);
             out @get[value] = DSyntax[value];
-            index += 1;
+            index_export += 1;
         }
     }
 }

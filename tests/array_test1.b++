@@ -3,11 +3,8 @@ import "stdlib";
 
 // crear array
 Array.new(MyArray, num, 43, 24, 56);
-// declarar el indice
-index = 0;
-
-for (#MyArray)
-{
-    Array.GetFrom(MyArray, index, el); Sys.Out el
-    index += 1;
-}
+// foreachearlo
+MyArray.forEach("\1element\s index\2 \3
+    out %{element}% = 0\l
+ \4");
+MyArray.forEach("\1element\s index\2 \3Sys.Out %{element}% . \4");
